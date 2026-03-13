@@ -29,10 +29,10 @@ RUN find . -name "*.cbl" -exec dos2unix {} +
 
 # 5. Biên dịch các Module
 # Billing batch
-RUN ocesql batch/billing_batch.cbl batch/billing_batch.cob || \
-    (echo "=== OCESQL FAILED ===" && cat batch/billing_batch.cbl && exit 1)
-RUN cobc -x -free batch/billing_batch.cob -o bin/billing_batch \
-         -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3
+# RUN ocesql batch/billing_batch.cbl batch/billing_batch.cob || \
+#     (echo "=== OCESQL FAILED ===" && cat batch/billing_batch.cbl && exit 1)
+# RUN cobc -x -free batch/billing_batch.cob -o bin/billing_batch \
+#          -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3
 
 # Rating engine
 RUN ocesql src/test.cbl src/test.cob || \
