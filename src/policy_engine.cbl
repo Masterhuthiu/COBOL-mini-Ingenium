@@ -1,16 +1,19 @@
 IDENTIFICATION DIVISION.
        PROGRAM-ID. POLICYENGINE.
 
+       ENVIRONMENT DIVISION.
+
        DATA DIVISION.
        WORKING-STORAGE SECTION.
        EXEC SQL BEGIN DECLARE SECTION END-EXEC.
        01 DB-POLICY-ID     PIC 9(6).
        EXEC SQL END DECLARE SECTION END-EXEC.
+       01 SQLCODE          PIC S9(9) COMP VALUE 0.
 
        PROCEDURE DIVISION.
            DISPLAY "POLICY ENGINE: UPDATING STATUS".
            EXEC SQL
-               UPDATE policy SET status = 'ACTIVE' 
+               UPDATE policy SET status = 'ACTIVE'
                WHERE policy_id = :DB-POLICY-ID
            END-EXEC.
            GOBACK.
