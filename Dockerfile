@@ -1,19 +1,31 @@
-FROM ubuntu:22.04
+FROM ubuntu:20.04
+
 ENV DEBIAN_FRONTEND=noninteractive
 
 # 1. Cài đặt công cụ build và thư viện phụ thuộc
 RUN apt-get update && apt-get install -y \
-    gnucobol libcob4-dev \
-    libsqlite3-dev libpq-dev \
-    pkg-config build-essential gcc make git \
-    autoconf automake libtool \
-    python3 python3-pip cron \
+    gnucobol \
+    libcob4-dev \
+    libsqlite3-dev \
+    libpq-dev \        
+    pkg-config \
+    build-essential \
+    gcc \
+    make \
+    git \
+    autoconf \
+    automake \
+    libtool \
+    python3 \
+    python3-pip \
+    cron \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Cài đặt Open-COBOL-ESQL (SQLite-only)
+# 2. Cài đặt Open-COBOL-ESQL (SQLite-only, dùng tag ổn định 1.1)
 WORKDIR /opt
 RUN git clone https://github.com/opensourcecobol/Open-COBOL-ESQL.git && \
     cd Open-COBOL-ESQL && \
+    git checkout 1.1 && \
     autoreconf -i && \
     ./configure --with-sqlite3 --without-postgresql && \
     make -j$(nproc) && \
@@ -40,7 +52,9 @@ RUN echo "0 0 * * * root /app/bin/billing_batch >> /var/log/cron.log 2>&1" > /et
     chmod 0644 /etc/cron.d/billing-cron && \
     crontab /etc/cron.d/billing-cron
 
+# 6. Thiết lập môi trường runtime
 ENV COB_LIBRARY_PATH=/app/bin
 EXPOSE 5000
 
+# 7. Chạy cron song song với ứng dụng chính
 CMD ["bash", "-c", "service cron start && exec python3 api/app.py"]
