@@ -22,16 +22,13 @@ RUN autoreconf -fiv && \
 WORKDIR /app
 COPY test.cbl .
 
-# Chuan hoa file (fix xuong dong Windows va dam bao thut le 7 dau cach)
+# Bước sửa lỗi Exit 1:
+# 1. Chuyển định dạng file về Unix
+# 2. Chạy ocesql với cờ -I để nạp thư viện hệ thống
+# 3. Biên dịch với cobc
 RUN dos2unix test.cbl && \
-    sed -i 's/^[[:space:]]*//' test.cbl && \
-    sed -i 's/^/       /' test.cbl
-
-# Pre-compile SQL sang COBOL và Bien dich sang file thuc thi
-RUN ocesql test.cbl test.cob && \
+    ocesql -I/usr/local/include test.cbl test.cob && \
     cobc -x -free test.cob -o test_app -L/usr/local/lib -locesql -lsqlite3
 
-# 4. Thiet lap moi truong runtime va chay
 ENV LD_LIBRARY_PATH="/usr/local/lib"
-
 CMD ["./test_app"]
