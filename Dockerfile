@@ -22,21 +22,20 @@ WORKDIR /app
 COPY . .
 RUN mkdir -p db bin
 
-# 4. Biên dịch COBOL (Sửa lỗi 255 bằng cách kiểm tra file)
-# Sử dụng 'find' để tránh lỗi nếu thư mục trống và đảm bảo ocesql chạy đúng
+# 4. Biên dịch COBOL (Đã loại bỏ --free ở ocesql)
 RUN find . -name "*.cbl" -exec dos2unix {} + && \
     # Biên dịch batch/billing_batch
-    ocesql --free batch/billing_batch.cbl batch/billing_batch.cob && \
+    ocesql batch/billing_batch.cbl batch/billing_batch.cob && \
     cobc -x -free batch/billing_batch.cob -o bin/billing_batch \
          -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3 && \
-    # Biên dịch các module engine (Sử dụng cấu trúc an toàn)
-    ocesql --free src/rating_engine.cbl src/rating_engine.cob && \
+    # Biên dịch các engine
+    ocesql src/rating_engine.cbl src/rating_engine.cob && \
     cobc -m -free src/rating_engine.cob -o bin/rating_engine.so \
          -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3 && \
-    ocesql --free src/policy_engine.cbl src/policy_engine.cob && \
+    ocesql src/policy_engine.cbl src/policy_engine.cob && \
     cobc -m -free src/policy_engine.cob -o bin/policy_engine.so \
          -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3 && \
-    ocesql --free src/claim_engine.cbl src/claim_engine.cob && \
+    ocesql src/claim_engine.cbl src/claim_engine.cob && \
     cobc -m -free src/claim_engine.cob -o bin/claim_engine.so \
          -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3
 
@@ -45,7 +44,7 @@ RUN echo "0 0 * * * root /app/bin/billing_batch >> /var/log/cron.log 2>&1" > /et
     chmod 0644 /etc/cron.d/billing-cron && \
     crontab /etc/cron.d/billing-cron
 
-# 6. Môi trường runtime (Sửa lỗi cảnh báo UndefinedVar)
+# 6. Môi trường runtime
 ENV LD_LIBRARY_PATH="/usr/local/lib"
 ENV COB_LIBRARY_PATH="/app/bin"
 EXPOSE 5000
