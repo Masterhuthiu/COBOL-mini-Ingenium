@@ -2,7 +2,7 @@ FROM ubuntu:20.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 1. Cài đặt đầy đủ công cụ build
+# 1. Cài đặt dependencies
 RUN apt-get update && apt-get install -y \
     gnucobol libcob4-dev libsqlite3-dev libpq-dev \
     pkg-config build-essential gcc make git autoconf automake libtool \
@@ -22,13 +22,14 @@ WORKDIR /app
 COPY . .
 RUN mkdir -p db bin
 
-# 4. Tiền xử lý mã nguồn (Bắt buộc để ocesql không lỗi)
-# - dos2unix: Fix lỗi xuống dòng Windows
-# - sed: Tự động thêm 7 khoảng trắng vào đầu mỗi dòng để đưa về đúng Fixed Format
+# 4. Tiền xử lý mã nguồn
+# - dos2unix: Xử lý ký tự xuống dòng Windows.
+# - sed: Chỉ thêm khoảng trắng vào những dòng CÓ nội dung để tránh làm hỏng cấu trúc file.
 RUN find . -name "*.cbl" -exec dos2unix {} + && \
+    find . -name "*.cbl" -exec sed -i 's/^[[:space:]]*//' {} + && \
     find . -name "*.cbl" -exec sed -i 's/^/       /' {} +
 
-# 5. Biên dịch từng file (Chia nhỏ để tránh lỗi hàng loạt)
+# 5. Biên dịch từng file (Sử dụng lệnh kiểm tra lỗi chi tiết)
 # Biên dịch Batch
 RUN ocesql batch/billing_batch.cbl batch/billing_batch.cob && \
     cobc -x -free batch/billing_batch.cob -o bin/billing_batch -L/usr/local/lib -locesql -lsqlite3
@@ -45,7 +46,7 @@ RUN ocesql src/policy_engine.cbl src/policy_engine.cob && \
 RUN ocesql src/claim_engine.cbl src/claim_engine.cob && \
     cobc -m -free src/claim_engine.cob -o bin/claim_engine.so -L/usr/local/lib -locesql -lsqlite3
 
-# 6. Cấu hình Cron & Môi trường
+# 6. Cấu hình hệ thống
 RUN echo "0 0 * * * root /app/bin/billing_batch >> /var/log/cron.log 2>&1" > /etc/cron.d/billing-cron && \
     chmod 0644 /etc/cron.d/billing-cron && \
     crontab /etc/cron.d/billing-cron
