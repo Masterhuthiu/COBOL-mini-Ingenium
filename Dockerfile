@@ -35,22 +35,24 @@ RUN cobc -x -free batch/billing_batch.cob -o bin/billing_batch \
          -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3
 
 # Rating engine
-RUN ocesql src/rating_engine.cbl src/rating_engine.cob || \
-    (echo "=== OCESQL FAILED ===" && cat src/rating_engine.cbl && exit 1)
-RUN cobc -m -free src/rating_engine.cob -o bin/rating_engine.so \
-         -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3
+RUN ocesql src/test.cbl src/test.cob || \
+    (echo "=== OCESQL FAILED ===" && cat src/test.cbl && exit 1)
+# RUN ocesql src/rating_engine.cbl src/rating_engine.cob || \
+#     (echo "=== OCESQL FAILED ===" && cat src/rating_engine.cbl && exit 1)
+# RUN cobc -m -free src/rating_engine.cob -o bin/rating_engine.so \
+#          -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3
 
-# Policy engine
-RUN ocesql src/policy_engine.cbl src/policy_engine.cob || \
-    (echo "=== OCESQL FAILED ===" && cat src/policy_engine.cbl && exit 1)
-RUN cobc -m -free src/policy_engine.cob -o bin/policy_engine.so \
-         -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3
+# # Policy engine
+# RUN ocesql src/policy_engine.cbl src/policy_engine.cob || \
+#     (echo "=== OCESQL FAILED ===" && cat src/policy_engine.cbl && exit 1)
+# RUN cobc -m -free src/policy_engine.cob -o bin/policy_engine.so \
+#          -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3
 
-# Claim engine
-RUN ocesql src/claim_engine.cbl src/claim_engine.cob || \
-    (echo "=== OCESQL FAILED ===" && cat src/claim_engine.cbl && exit 1)
-RUN cobc -m -free src/claim_engine.cob -o bin/claim_engine.so \
-         -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3
+# # Claim engine
+# RUN ocesql src/claim_engine.cbl src/claim_engine.cob || \
+#     (echo "=== OCESQL FAILED ===" && cat src/claim_engine.cbl && exit 1)
+# RUN cobc -m -free src/claim_engine.cob -o bin/claim_engine.so \
+#          -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3
 
 # 6. Thiết lập Cron job
 RUN echo "0 0 * * * root /app/bin/billing_batch >> /var/log/cron.log 2>&1" > /etc/cron.d/billing-cron && \
