@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
 
 # 2. Build Open-COBOL-ESQL từ source
 WORKDIR /opt
-RUN git clone https://github.com/opensourcecobol/Open-COBOL-ESQL.git && \
+RUN git clone https://github.com/sobisch/Open-COBOL-ESQL.git && \
     cd Open-COBOL-ESQL && \
     git checkout develop && \
     autoreconf -i && \
