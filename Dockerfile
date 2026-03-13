@@ -1,47 +1,24 @@
-name: Build and Push Docker Image
+FROM ubuntu:22.04
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+ENV DEBIAN_FRONTEND=noninteractive
 
-jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
+RUN apt-get update && \
+    apt-get install -y gnucobol gcc python3 python3-pip && \
+    rm -rf /var/lib/apt/lists/*
 
-    steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
+WORKDIR /app
+COPY . .
 
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASS }}
+RUN if [ -f requirements.txt ]; then pip3 install --no-cache-dir -r requirements.txt; fi
 
-      - name: Set up Image Metadata
-        id: meta
-        run: |
-          # Chuyển DOCKER_USER về chữ thường để tránh lỗi "invalid reference format"
-          LOW_USER=$(echo "${{ secrets.DOCKER_USER }}" | tr '[:upper:]' '[:lower:]')
-          IMAGE_NAME="$LOW_USER/mini-ingenium"
-          echo "IMAGE_TAG=$IMAGE_NAME:latest" >> $GITHUB_ENV
-          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+RUN mkdir -p bin
 
-      - name: Build and Push Docker Image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: ${{ env.IMAGE_TAG }}
-          # Cache giúp build nhanh hơn ở các lần sau
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+# Biên dịch COBOL với flag -free và -I cho copybooks
+RUN cobc -m -free -I copybooks src/rating_engine.cbl -o bin/rating_engine.so
+RUN cobc -m -free -I copybooks src/policy_engine.cbl -o bin/policy_engine.so
+RUN cobc -m -free -I copybooks src/claim_engine.cbl -o bin/claim_engine.so
+RUN cobc -x -free -I copybooks batch/billing_batch.cbl -o bin/billing_batch
 
-      - name: Image Summary
-        run: |
-          echo "Successfully pushed to: ${{ env.IMAGE_TAG }}"
+ENV COB_LIBRARY_PATH=/app/bin
+
+CMD ["python3", "api/app.py"]
