@@ -17,21 +17,18 @@ RUN ./configure --with-sqlite3 --without-postgresql
 RUN make -j$(nproc)
 RUN make install && ldconfig
 
-# Copy test file
 WORKDIR /app
 COPY test.cbl .
 
-# Step 1: ocesql preprocess
-RUN ocesql test.cbl test.cob || \
-    (echo "=== OCESQL ERROR ===" && cat test.cbl && exit 1)
+# Step 1: ocesql preprocess - show output
+RUN echo "=== ORIGINAL test.cbl ===" && cat test.cbl
+RUN ocesql test.cbl test.cob && echo "=== OCESQL OK ===" || \
+    (echo "=== OCESQL FAILED ===" && exit 1)
+RUN echo "=== GENERATED test.cob ===" && cat test.cob
 
-# Step 2: compile
-RUN cobc -x -free test.cob -o test_bin \
-         -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3 || \
-    (echo "=== COBC ERROR ===" && cat test.cob && exit 1)
-
-# Step 3: run test inside build to verify
+# Step 2: compile with full error output
 ENV LD_LIBRARY_PATH="/usr/local/lib"
-RUN ./test_bin
+RUN cobc -x -free -v test.cob -o test_bin \
+         -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3
 
 CMD ["./test_bin"]
