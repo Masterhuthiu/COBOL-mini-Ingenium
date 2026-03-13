@@ -20,34 +20,32 @@ RUN git clone https://github.com/opensourcecobol/Open-COBOL-ESQL.git && \
 # 3. Thiết lập ứng dụng
 WORKDIR /app
 COPY . .
-RUN mkdir -p db bin
+RUN mkdir -p db bin && find . -name "*.cbl" -exec dos2unix {} +
 
-# 4. Biên dịch COBOL (Đã loại bỏ --free ở ocesql)
-RUN find . -name "*.cbl" -exec dos2unix {} + && \
-    # Biên dịch batch/billing_batch
-    ocesql batch/billing_batch.cbl batch/billing_batch.cob && \
-    cobc -x -free batch/billing_batch.cob -o bin/billing_batch \
-         -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3 && \
-    # Biên dịch các engine
-    ocesql src/rating_engine.cbl src/rating_engine.cob && \
-    cobc -m -free src/rating_engine.cob -o bin/rating_engine.so \
-         -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3 && \
-    ocesql src/policy_engine.cbl src/policy_engine.cob && \
-    cobc -m -free src/policy_engine.cob -o bin/policy_engine.so \
-         -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3 && \
-    ocesql src/claim_engine.cbl src/claim_engine.cob && \
-    cobc -m -free src/claim_engine.cob -o bin/claim_engine.so \
-         -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3
+# 4. Biên dịch từng file (Tách riêng để cô lập lỗi)
+# Bước 4.1: Biên dịch Batch
+RUN ocesql batch/billing_batch.cbl batch/billing_batch.cob && \
+    cobc -x -free batch/billing_batch.cob -o bin/billing_batch -L/usr/local/lib -locesql -lsqlite3
 
-# 5. Cron job
+# Bước 4.2: Biên dịch Rating Engine
+RUN ocesql src/rating_engine.cbl src/rating_engine.cob && \
+    cobc -m -free src/rating_engine.cob -o bin/rating_engine.so -L/usr/local/lib -locesql -lsqlite3
+
+# Bước 4.3: Biên dịch Policy Engine
+RUN ocesql src/policy_engine.cbl src/policy_engine.cob && \
+    cobc -m -free src/policy_engine.cob -o bin/policy_engine.so -L/usr/local/lib -locesql -lsqlite3
+
+# Bước 4.4: Biên dịch Claim Engine
+RUN ocesql src/claim_engine.cbl src/claim_engine.cob && \
+    cobc -m -free src/claim_engine.cob -o bin/claim_engine.so -L/usr/local/lib -locesql -lsqlite3
+
+# 5. Cấu hình Cron và Môi trường
 RUN echo "0 0 * * * root /app/bin/billing_batch >> /var/log/cron.log 2>&1" > /etc/cron.d/billing-cron && \
     chmod 0644 /etc/cron.d/billing-cron && \
     crontab /etc/cron.d/billing-cron
 
-# 6. Môi trường runtime
 ENV LD_LIBRARY_PATH="/usr/local/lib"
 ENV COB_LIBRARY_PATH="/app/bin"
 EXPOSE 5000
 
-# 7. Chạy ứng dụng
 CMD ["bash", "-c", "service cron start && exec python3 api/app.py"]
