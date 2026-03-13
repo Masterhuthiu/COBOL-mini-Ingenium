@@ -1,10 +1,11 @@
 FROM ubuntu:22.04
 
-# Cài đặt đầy đủ bộ công cụ Build và Dependencies
+# Cài đặt toàn bộ "vũ khí" cần thiết
 RUN apt-get update && apt-get install -y \
     gnucobol \
+    libcob2-dev \
     unixodbc-dev \
-    libodbc1 \
+    odbcinst \
     libtool \
     autoconf \
     automake \
@@ -14,12 +15,13 @@ RUN apt-get update && apt-get install -y \
     git \
     coreutils
 
-# Clone và build Open-COBOL-ESQL
+# Clone repo
 RUN git clone https://github.com/opensourcecobol/Open-COBOL-ESQL.git /opt/esql
 WORKDIR /opt/esql
 
-# Chạy từng bước để dễ debug nếu có lỗi
+# Chạy build
 RUN ./autogen.sh
+# Thêm các cờ hỗ trợ nếu cần, nhưng cơ bản chỉ cần ./configure
 RUN ./configure
 RUN make
 RUN make install
