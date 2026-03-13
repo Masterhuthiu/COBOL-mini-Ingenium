@@ -21,12 +21,13 @@ RUN apt-get update && apt-get install -y \
     cron \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Cài đặt Open-COBOL-ESQL (SQLite-only, dùng tag ổn định 1.1)
+# 2. Cài đặt Open-COBOL-ESQL
 WORKDIR /opt
 RUN git clone https://github.com/opensourcecobol/Open-COBOL-ESQL.git && \
     cd Open-COBOL-ESQL && \
     git checkout 1.1 && \
-    autoreconf -i && \
+    chmod +x autogen.sh && \
+    ./autogen.sh && \
     ./configure --with-sqlite3 --without-postgresql && \
     make -j$(nproc) && \
     make install && \
