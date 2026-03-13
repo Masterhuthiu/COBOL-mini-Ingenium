@@ -1,29 +1,33 @@
-# Sử dụng image đã cấu hình sẵn GnuCOBOL để tránh lỗi apt-get
-FROM mbcrawfo/gnucobol:3.1-dev
+FROM ubuntu:24.04
 
-USER root
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Cài đặt các thư viện bổ trợ cho ESQL và ODBC
 RUN apt-get update && apt-get install -y \
-    git \
-    libtool \
+    build-essential \
     autoconf \
     automake \
+    libtool \
     pkg-config \
-    unixodbc-dev \
-    odbcinst \
-    && rm -rf /var/lib/apt/lists/*
+    make \
+    gcc \
+    g++ \
+    git \
+    ca-certificates \
+    libpq-dev \
+    postgresql-client \
+    gnucobol \
+ && rm -rf /var/lib/apt/lists/*
 
-# Build Open-COBOL-ESQL từ nguồn
-WORKDIR /opt/esql
-RUN git clone https://github.com/opensourcecobol/Open-COBOL-ESQL.git . \
-    && chmod +x autogen.sh \
-    && ./autogen.sh \
-    && ./configure \
-    && make \
-    && make install \
-    && ldconfig
-
-# Quay lại thư mục app để làm việc
 WORKDIR /app
+
+COPY . /app
+
+RUN export CPPFLAGS="-I/usr/include/postgresql" && \
+    ./configure && \
+    make -j"$(nproc)" && \
+    make install && \
+    ldconfig
+
+ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+
+CMD ["bash"]
