@@ -1,42 +1,47 @@
-FROM ubuntu:22.04
+name: Build and Push Docker Image
 
-# Thiết lập môi trường để tránh các câu hỏi tương tác khi cài đặt
-ENV DEBIAN_FRONTEND=noninteractive
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
-# Cài đặt các gói cần thiết
-RUN apt-get update && \
-    apt-get install -y \
-    gnucobol \
-    gcc \
-    make \
-    python3 \
-    python3-pip && \
-    rm -rf /var/lib/apt/lists/*
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
 
-WORKDIR /app
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
 
-# Copy toàn bộ source code vào container
-COPY . .
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASS }}
 
-# Cài đặt dependencies cho Python
-RUN pip3 install --no-cache-dir -r requirements.txt
+      - name: Set up Image Metadata
+        id: meta
+        run: |
+          # Chuyển DOCKER_USER về chữ thường để tránh lỗi "invalid reference format"
+          LOW_USER=$(echo "${{ secrets.DOCKER_USER }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_NAME="$LOW_USER/mini-ingenium"
+          echo "IMAGE_TAG=$IMAGE_NAME:latest" >> $GITHUB_ENV
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
 
-# Tạo thư mục bin để chứa các file thực thi/module
-RUN mkdir -p bin
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_TAG }}
+          # Cache giúp build nhanh hơn ở các lần sau
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-# BIÊN DỊCH COBOL:
-# 1. Các Engine (rating, policy, claim) dùng LINKAGE SECTION nên phải build thành MODULE (-m)
-RUN cobc -m src/rating_engine.cbl -o bin/rating_engine.so
-RUN cobc -m src/policy_engine.cbl -o bin/policy_engine.so
-RUN cobc -m src/claim_engine.cbl -o bin/claim_engine.so
-
-# 2. Billing Batch nếu là chương trình chạy độc lập thì dùng (-x) 
-# Nhưng nếu nó cũng có "USING", bạn phải đổi sang -m luôn.
-RUN cobc -x batch/billing_batch.cbl -o bin/billing_batch
-
-# Thiết lập biến môi trường để COBOL tìm thấy các module .so trong thư mục bin
-ENV COB_LIBRARY_PATH=/app/bin
-
-EXPOSE 5000
-
-CMD ["python3", "api/app.py"]
+      - name: Image Summary
+        run: |
+          echo "Successfully pushed to: ${{ env.IMAGE_TAG }}"
