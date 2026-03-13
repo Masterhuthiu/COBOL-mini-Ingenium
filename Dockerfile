@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     flex \
     git \
     wget \
+    pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /opt
@@ -25,19 +26,18 @@ RUN git clone --depth 1 --branch develop \
 
 WORKDIR /opt/ocesql
 
-# Tách từng bước để dễ debug
 RUN chmod +x autogen.sh && ./autogen.sh
 
 RUN export YACC="bison -y" && \
     export CPPFLAGS="-I/usr/include/postgresql" && \
-    ./configure 2>&1 | tee /tmp/configure.log || (cat /tmp/configure.log && exit 1)
+    ./configure
 
-RUN make 2>&1 | tee /tmp/make.log || (cat /tmp/make.log && exit 1)
+RUN make
 
 RUN make install && ldconfig
 
 ENV COBCPY=/usr/local/share/ocesql/copy
-ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+ENV LD_LIBRARY_PATH=/usr/local/lib
 ENV PATH=/usr/local/bin:$PATH
 
 WORKDIR /app
