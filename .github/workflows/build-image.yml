@@ -223,7 +223,7 @@ jobs:
           cobc -x INSERTTBL.cob /usr/local/lib/libocesql.so -o INSERTTBL
           cobc -x FETCHTBL.cob  /usr/local/lib/libocesql.so -o FETCHTBL
           echo "✅ Compile thành công"
-          ldd INSERTTBL | grep ocesql
+          ldd INSERTTBL
 
       - name: Run INSERTTBL và in kết quả
         env:
