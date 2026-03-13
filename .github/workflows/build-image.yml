@@ -206,18 +206,6 @@ jobs:
           sudo ldconfig
           echo "--- Kiểm tra library ---"
           ls -la /usr/local/lib/libocesql*
-          ldconfig -p | grep ocesql
-
-      - name: Debug GnuCOBOL module path
-        run: |
-          echo "--- GnuCOBOL version ---"
-          cobc --version
-          echo "--- cobcrun info ---"
-          cobcrun --info || true
-          echo "--- Các file .so trong /usr/local/lib ---"
-          ls /usr/local/lib/*.so
-          echo "--- libcob path ---"
-          ls /usr/lib/x86_64-linux-gnu/libcob* || true
 
       - name: Pre-compile COBOL ESQL samples
         run: |
@@ -231,13 +219,11 @@ jobs:
         run: |
           export COBCPY=/usr/local/share/open-cobol-esql/copy
           cd /tmp/ocesql/sample
-          # Compile libocesql thành COBOL module
-          cobc -m /usr/local/lib/libocesql.so -o /usr/local/lib/ocesql.so
-          # Compile COBOL programs
+          # Compile vào thư mục hiện tại, không cần sudo
           cobc -x INSERTTBL.cob /usr/local/lib/libocesql.so -o INSERTTBL
           cobc -x FETCHTBL.cob  /usr/local/lib/libocesql.so -o FETCHTBL
           echo "✅ Compile thành công"
-          ldd INSERTTBL
+          ls -la INSERTTBL FETCHTBL
 
       - name: Run INSERTTBL và in kết quả
         env:
