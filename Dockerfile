@@ -8,6 +8,8 @@ RUN apt-get update && \
     gnucobol \
     libcob4-dev \
     libsqlite3-dev \
+    libpq-dev \        # cần để vượt qua check configure
+    pkg-config \
     build-essential \
     gcc \
     make \
@@ -15,9 +17,9 @@ RUN apt-get update && \
     autoconf \
     automake \
     libtool \
-    pkg-config \
     python3 \
     python3-pip \
+    cron \
     && rm -rf /var/lib/apt/lists/*
 
 # 2. Cài đặt Open-COBOL-ESQL (SQLite-only)
@@ -49,8 +51,14 @@ RUN ocesql src/policy_engine.cbl src/policy_engine.cob && \
 RUN ocesql src/claim_engine.cbl src/claim_engine.cob && \
     cobc -m -free src/claim_engine.cob -o bin/claim_engine.so -locesql -lsqlite3
 
-# 6. Thiết lập môi trường runtime
+# 6. Thiết lập cron job
+RUN echo "0 0 * * * root /app/bin/billing_batch >> /var/log/cron.log 2>&1" > /etc/cron.d/billing-cron && \
+    chmod 0644 /etc/cron.d/billing-cron && \
+    crontab /etc/cron.d/billing-cron
+
+# 7. Thiết lập môi trường runtime
 ENV COB_LIBRARY_PATH=/app/bin
 EXPOSE 5000
 
-CMD ["python3", "api/app.py"]
+# 8. Chạy cron song song với ứng dụng chính
+CMD service cron start && python3 api/app.py
