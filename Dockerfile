@@ -2,23 +2,22 @@ FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Cài đặt các gói cơ bản
+# Cài đặt các gói cơ bản và thư viện cần thiết
 RUN apt-get update && \
     apt-get install -y \
     gnucobol \
     gcc \
     make \
-    git \
+    curl \
     libsqlite3-dev \
     python3 \
     python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
-# Cài đặt GnuCOBOL-SQL (Sửa lỗi git clone)
+# Cài đặt GnuCOBOL-SQL (Sử dụng curl thay cho git clone để tránh lỗi 128)
 WORKDIR /opt
-# Thêm --depth 1 để clone nhanh hơn và tránh lỗi timeout
-RUN git clone --depth 1 https://github.com/mhardisty/GnuCOBOL-SQL.git && \
-    cd GnuCOBOL-SQL && \
+RUN curl -L https://github.com/mhardisty/GnuCOBOL-SQL/archive/refs/heads/master.tar.gz | tar xz && \
+    cd GnuCOBOL-SQL-master && \
     make && \
     make install
 
@@ -28,12 +27,11 @@ COPY . .
 # Tạo thư mục cho database và binaries
 RUN mkdir -p db bin
 
-# Quy trình biên dịch: Dùng 'esql' đã cài đặt
-# Lưu ý: Các file .cbl phải có cấu trúc EXEC SQL mới chạy được lệnh này
+# Quy trình biên dịch Production: Pre-process -> Compile
+# Chuyển đổi SQL thành COBOL thuần và biên dịch
 RUN esql batch/billing_batch.cbl -o batch/billing_batch_sqled.cbl && \
     cobc -x -free batch/billing_batch_sqled.cbl -o bin/billing_batch -lsqlite3
 
-# Biên dịch các module engine
 RUN esql src/rating_engine.cbl -o src/rating_engine_sqled.cbl && \
     cobc -m -free src/rating_engine_sqled.cbl -o bin/rating_engine.so -lsqlite3
 
