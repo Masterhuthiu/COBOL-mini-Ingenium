@@ -3,13 +3,12 @@ FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 
 # 1. Cài đặt công cụ build và thư viện phụ thuộc
-# 1. Cài đặt công cụ build và thư viện phụ thuộc
 RUN apt-get update && \
     apt-get install -y \
     gnucobol \
     libcob4-dev \
     libsqlite3-dev \
-    libpq-dev \
+    libpq-dev \        # chỉ để vượt qua check
     pkg-config \
     build-essential \
     gcc \
@@ -22,6 +21,7 @@ RUN apt-get update && \
     python3-pip \
     cron \
     && rm -rf /var/lib/apt/lists/*
+
 
 # 2. Cài đặt Open-COBOL-ESQL (SQLite-only)
 WORKDIR /opt
