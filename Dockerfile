@@ -24,31 +24,33 @@ WORKDIR /app
 COPY . .
 RUN mkdir -p db bin
 
-# 4. Tiền xử lý mã nguồn
-RUN find . -name "*.cbl" -exec dos2unix {} + && \
-    find . -name "*.cbl" -exec sed -i 's/^[[:space:]]*//' {} + && \
-    find . -name "*.cbl" -exec sed -i 's/^/       /' {} +
+# 4. Tiền xử lý mã nguồn - chỉ convert line endings, KHÔNG thêm spaces
+RUN find . -name "*.cbl" -exec dos2unix {} +
 
+# 5. Biên dịch các Module
 # Billing batch
-RUN ocesql batch/billing_batch.cbl batch/billing_batch.cob && \
-    cobc -x -free batch/billing_batch.cob -o bin/billing_batch \
+RUN ocesql batch/billing_batch.cbl batch/billing_batch.cob || \
+    (echo "=== OCESQL FAILED ===" && cat batch/billing_batch.cbl && exit 1)
+RUN cobc -x -free batch/billing_batch.cob -o bin/billing_batch \
          -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3
 
 # Rating engine
-RUN ocesql src/rating_engine.cbl src/rating_engine.cob && \
-    cobc -m -free src/rating_engine.cob -o bin/rating_engine.so \
+RUN ocesql src/rating_engine.cbl src/rating_engine.cob || \
+    (echo "=== OCESQL FAILED ===" && cat src/rating_engine.cbl && exit 1)
+RUN cobc -m -free src/rating_engine.cob -o bin/rating_engine.so \
          -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3
 
 # Policy engine
-RUN ocesql src/policy_engine.cbl src/policy_engine.cob && \
-    cobc -m -free src/policy_engine.cob -o bin/policy_engine.so \
+RUN ocesql src/policy_engine.cbl src/policy_engine.cob || \
+    (echo "=== OCESQL FAILED ===" && cat src/policy_engine.cbl && exit 1)
+RUN cobc -m -free src/policy_engine.cob -o bin/policy_engine.so \
          -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3
 
 # Claim engine
-RUN ocesql src/claim_engine.cbl src/claim_engine.cob && \
-    cobc -m -free src/claim_engine.cob -o bin/claim_engine.so \
+RUN ocesql src/claim_engine.cbl src/claim_engine.cob || \
+    (echo "=== OCESQL FAILED ===" && cat src/claim_engine.cbl && exit 1)
+RUN cobc -m -free src/claim_engine.cob -o bin/claim_engine.so \
          -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3
-
 
 # 6. Thiết lập Cron job
 RUN echo "0 0 * * * root /app/bin/billing_batch >> /var/log/cron.log 2>&1" > /etc/cron.d/billing-cron && \
