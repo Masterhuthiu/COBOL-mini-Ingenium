@@ -1,0 +1,4 @@
+EXEC SQL
+    SELECT name INTO :EMP-NAME
+    FROM employees WHERE id = :EMP-ID
+END-EXEC.
