@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:18.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -9,12 +9,11 @@ RUN apt-get update && apt-get install -y \
     flex bison dos2unix python3 python3-pip cron \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Cài đặt Open-COBOL-ESQL (SQLite-only)
+# 2. Cài đặt Open-COBOL-ESQL (SQLite-only, dùng branch develop)
 WORKDIR /opt
-RUN git clone https://github.com/opensourcecobol/Open-COBOL-ESQL.git && \
+RUN git clone -b develop https://github.com/opensourcecobol/Open-COBOL-ESQL.git && \
     cd Open-COBOL-ESQL && \
-    git checkout 1.1 && \
-    chmod +x autogen.sh && ./autogen.sh && \
+    autoreconf -i && \
     ./configure --with-sqlite3 --without-postgresql && \
     make -j$(nproc) && make install && ldconfig
 
