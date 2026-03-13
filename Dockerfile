@@ -8,8 +8,8 @@ RUN apt-get update && \
     gnucobol \
     libcob4-dev \
     libsqlite3-dev \
-    libpq-dev \        
-    pkg-config \       
+    libpq-dev \        # chỉ để vượt qua check configure
+    pkg-config \
     build-essential \
     gcc \
     make \
@@ -22,11 +22,11 @@ RUN apt-get update && \
     cron \
     && rm -rf /var/lib/apt/lists/*
 
-
 # 2. Cài đặt Open-COBOL-ESQL (SQLite-only)
 WORKDIR /opt
 RUN git clone https://github.com/opensourcecobol/Open-COBOL-ESQL.git && \
     cd Open-COBOL-ESQL && \
+    autoreconf -i && \                # tái tạo configure script
     ./configure --with-sqlite3 --without-postgresql && \
     make && \
     make install && \
@@ -62,4 +62,4 @@ ENV COB_LIBRARY_PATH=/app/bin
 EXPOSE 5000
 
 # 8. Chạy cron song song với ứng dụng chính
-CMD service cron start && python3 api/app.py
+CMD ["bash", "-c", "service cron start && exec python3 api/app.py"]
