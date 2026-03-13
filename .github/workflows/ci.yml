@@ -22,10 +22,11 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Show system info
+      - name: Show repository files
         run: |
-          uname -a
-          lsb_release -a || true
+          pwd
+          ls -la
+          find . -maxdepth 2 -type f | sort | head -200
 
       - name: Install dependencies
         run: |
@@ -40,15 +41,19 @@ jobs:
             gcc \
             g++ \
             git \
+            m4 \
             libpq-dev \
             postgresql-client \
             gnucobol
 
-      - name: Check installed tools
+      - name: Generate configure script
         run: |
-          cobc -V || true
-          pg_config --version || true
-          autoreconf --version || true
+          if [ -f "./autogen.sh" ]; then
+            chmod +x ./autogen.sh
+            ./autogen.sh
+          else
+            autoreconf -fi
+          fi
 
       - name: Configure
         run: |
@@ -64,18 +69,19 @@ jobs:
           sudo make install
           sudo ldconfig
 
-      - name: Smoke test - check binary and library
+      - name: Smoke test
         run: |
           which ocesql || true
           ocesql --help || true
           ls -l /usr/local/lib | grep ocesql || true
           ldconfig -p | grep ocesql || true
 
-      - name: Upload logs if needed
+      - name: Upload config logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts
+          name: build-logs
           path: |
             config.log
+            config.status
           if-no-files-found: ignore
