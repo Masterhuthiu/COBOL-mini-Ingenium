@@ -2,7 +2,7 @@ FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 1. Cài đặt công cụ và thư viện
+# 1. Cài đặt công cụ build và thư viện phụ thuộc
 RUN apt-get update && \
     apt-get install -y \
     gnucobol \
@@ -11,40 +11,43 @@ RUN apt-get update && \
     build-essential \
     gcc \
     make \
-    wget \
-    tar \
+    cmake \
+    git \
     python3 \
     python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Cài đặt GnuCOBOL-SQL (Sửa link từ master sang main)
+# 2. Cài đặt Open-COBOL-ESQL (ocesql)
 WORKDIR /opt
-RUN wget https://github.com/mhardisty/GnuCOBOL-SQL/archive/refs/heads/main.tar.gz -O gnu-sql.tar.gz && \
-    tar -xzf gnu-sql.tar.gz && \
-    cd GnuCOBOL-SQL-main && \
+RUN git clone https://github.com/opensourcecobol/Open-COBOL-ESQL.git && \
+    cd Open-COBOL-ESQL && \
+    mkdir build && cd build && \
+    cmake .. -DBUILD_SQLITE3=ON && \
     make && \
-    make install
+    make install && \
+    ldconfig
 
 # 3. Thiết lập ứng dụng
 WORKDIR /app
 COPY . .
 
-# 4. Tạo thư mục
+# 4. Tạo cấu trúc thư mục
 RUN mkdir -p db bin
 
-# 5. BIÊN DỊCH HỆ THỐNG (Sử dụng lệnh esql)
-# Lưu ý quan trọng: Các file .cbl dưới đây PHẢI chứa nội dung EXEC SQL mới build được
-RUN esql batch/billing_batch.cbl -o batch/billing_batch_sqled.cbl && \
-    cobc -x -free batch/billing_batch_sqled.cbl -o bin/billing_batch -lsqlite3
+# 5. BIÊN DỊCH HỆ THỐNG (Sử dụng lệnh ocesql)
+# Bước 1: Tiền xử lý .cbl thành .cob
+# Bước 2: Biên dịch .cob thành file thực thi/thư viện
+RUN ocesql batch/billing_batch.cbl batch/billing_batch.cob && \
+    cobc -x -free batch/billing_batch.cob -o bin/billing_batch -locesql -lsqlite3
 
-RUN esql src/rating_engine.cbl -o src/rating_engine_sqled.cbl && \
-    cobc -m -free src/rating_engine_sqled.cbl -o bin/rating_engine.so -lsqlite3
+RUN ocesql src/rating_engine.cbl src/rating_engine.cob && \
+    cobc -m -free src/rating_engine.cob -o bin/rating_engine.so -locesql -lsqlite3
 
-RUN esql src/policy_engine.cbl -o src/policy_engine_sqled.cbl && \
-    cobc -m -free src/policy_engine_sqled.cbl -o bin/policy_engine.so -lsqlite3
+RUN ocesql src/policy_engine.cbl src/policy_engine.cob && \
+    cobc -m -free src/policy_engine.cob -o bin/policy_engine.so -locesql -lsqlite3
 
-RUN esql src/claim_engine.cbl -o src/claim_engine_sqled.cbl && \      
-    cobc -m -free src/claim_engine_sqled.cbl -o bin/claim_engine.so -lsqlite3
+RUN ocesql src/claim_engine.cbl src/claim_engine.cob && \
+    cobc -m -free src/claim_engine.cob -o bin/claim_engine.so -locesql -lsqlite3
 
 ENV COB_LIBRARY_PATH=/app/bin
 EXPOSE 5000
