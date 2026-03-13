@@ -207,15 +207,6 @@ jobs:
           echo "--- Kiểm tra library ---"
           ls -la /usr/local/lib/libocesql*
 
-      - name: Debug - xem GnuCOBOL tìm module ở đâu
-        run: |
-          echo "--- cobcrun info ---"
-          cobcrun --info
-          echo "--- nm libocesql: xem symbol OCESQLConnect ---"
-          nm -D /usr/local/lib/libocesql.so | grep -i ocesql | head -20
-          echo "--- file type ---"
-          file /usr/local/lib/libocesql.so
-
       - name: Pre-compile COBOL ESQL samples
         run: |
           export COBCPY=/usr/local/share/open-cobol-esql/copy
@@ -233,7 +224,6 @@ jobs:
           cobc -x INSERTTBL.cob /usr/local/lib/libocesql.so -o INSERTTBL
           cobc -x FETCHTBL.cob  /usr/local/lib/libocesql.so -o FETCHTBL
           echo "✅ Compile thành công"
-          ls -la
 
       - name: Run INSERTTBL và in kết quả
         env:
@@ -272,14 +262,14 @@ jobs:
       - name: 🔍 Verify - Xem data trong PostgreSQL
         run: |
           echo "========================================"
-          echo "  DATA TRONG BẢNG TESTTBL"
+          echo "  DATA TRONG BẢNG EMP"
           echo "========================================"
           PGPASSWORD=postgres psql -h localhost -U postgres -d testdb \
             -c "\dt"
           echo "--- Nội dung bảng ---"
           PGPASSWORD=postgres psql -h localhost -U postgres -d testdb \
-            -c "SELECT * FROM TESTTBL;"
+            -c "SELECT * FROM emp;"
           echo "--- Số dòng ---"
           PGPASSWORD=postgres psql -h localhost -U postgres -d testdb \
-            -c "SELECT COUNT(*) as tong_so_dong FROM TESTTBL;"
+            -c "SELECT COUNT(*) as tong_so_dong FROM emp;"
           echo "========================================"
