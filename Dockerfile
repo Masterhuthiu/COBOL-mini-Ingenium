@@ -35,13 +35,14 @@ RUN find . -name "*.cbl" -exec dos2unix {} +
 #          -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3
 
 # Rating engine
-RUN ocesql src/test.cbl src/test.cob || \
-    (echo "=== OCESQL FAILED ===" && cat src/test.cbl && exit 1)
+RUN ocesql test.cbl test.cob && \
+    cobc -x -free test.cob -o test_app -L/usr/local/lib -locesql -lsqlite3
 
-RUN cobc -x -free src/test.cob -o bin/test \
-         -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3 \
-         > /tmp/cobc.log 2>&1 || (cat /tmp/cobc.log && exit 1)
-         
+# 6. Biên dịch các module nghiệp vụ (Dựa trên các file bạn đã upload)
+# Biên dịch Billing Batch (File thực thi)
+RUN ocesql batch/billing_batch.cbl batch/billing_batch.cob && \
+    cobc -x -free batch/billing_batch.cob -o bin/billing_batch -L/usr/local/lib -locesql -lsqlite3
+
 # RUN ocesql src/rating_engine.cbl src/rating_engine.cob || \
 #     (echo "=== OCESQL FAILED ===" && cat src/rating_engine.cbl && exit 1)
 # RUN cobc -m -free src/rating_engine.cob -o bin/rating_engine.so \
