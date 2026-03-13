@@ -37,6 +37,8 @@ RUN find . -name "*.cbl" -exec dos2unix {} +
 # Rating engine
 RUN ocesql src/test.cbl src/test.cob || \
     (echo "=== OCESQL FAILED ===" && cat src/test.cbl && exit 1)
+RUN cobc -x -free batch/test.cob -o bin/test \
+         -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3
 # RUN ocesql src/rating_engine.cbl src/rating_engine.cob || \
 #     (echo "=== OCESQL FAILED ===" && cat src/rating_engine.cbl && exit 1)
 # RUN cobc -m -free src/rating_engine.cob -o bin/rating_engine.so \
