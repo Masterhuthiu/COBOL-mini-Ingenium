@@ -204,6 +204,9 @@ jobs:
           sudo make install
           echo "/usr/local/lib" | sudo tee /etc/ld.so.conf.d/ocesql.conf
           sudo ldconfig
+          echo "--- Kiểm tra library ---"
+          ls -la /usr/local/lib/libocesql*
+          ldconfig -p | grep ocesql
 
       - name: Pre-compile COBOL ESQL samples
         run: |
@@ -217,13 +220,11 @@ jobs:
         run: |
           export COBCPY=/usr/local/share/open-cobol-esql/copy
           cd /tmp/ocesql/sample
-          cobc -x INSERTTBL.cob -L/usr/local/lib -locesql -o INSERTTBL
-          cobc -x FETCHTBL.cob  -L/usr/local/lib -locesql -o FETCHTBL
+          cobc -x INSERTTBL.cob /usr/local/lib/libocesql.so -o INSERTTBL
+          cobc -x FETCHTBL.cob  /usr/local/lib/libocesql.so -o FETCHTBL
           echo "✅ Compile thành công"
+          ldd INSERTTBL | grep ocesql
 
-      # ================================================
-      # CHẠY VÀ IN KẾT QUẢ RA LOG
-      # ================================================
       - name: Run INSERTTBL và in kết quả
         env:
           PGHOST: localhost
@@ -231,14 +232,13 @@ jobs:
           PGUSER: postgres
           PGPASSWORD: postgres
           PGDATABASE: testdb
-          LD_LIBRARY_PATH: /usr/local/lib:/usr/lib/x86_64-linux-gnu
         run: |
+          export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
           cd /tmp/ocesql/sample
           echo "========================================"
           echo "  CHẠY INSERTTBL - Tạo bảng + Insert"
           echo "========================================"
           ./INSERTTBL
-          echo "========================================"
           echo "✅ INSERTTBL hoàn thành"
 
       - name: Run FETCHTBL và in kết quả
@@ -248,14 +248,13 @@ jobs:
           PGUSER: postgres
           PGPASSWORD: postgres
           PGDATABASE: testdb
-          LD_LIBRARY_PATH: /usr/local/lib:/usr/lib/x86_64-linux-gnu
         run: |
+          export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
           cd /tmp/ocesql/sample
           echo "========================================"
           echo "  CHẠY FETCHTBL - Đọc data từ DB"
           echo "========================================"
           ./FETCHTBL
-          echo "========================================"
           echo "✅ FETCHTBL hoàn thành"
 
       - name: 🔍 Verify - Xem data trong PostgreSQL
