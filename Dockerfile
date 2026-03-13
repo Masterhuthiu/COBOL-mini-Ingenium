@@ -20,15 +20,17 @@ RUN make install && ldconfig
 WORKDIR /app
 COPY test.cbl .
 
-# Step 1: ocesql preprocess - show output
-RUN echo "=== ORIGINAL test.cbl ===" && cat test.cbl
-RUN ocesql test.cbl test.cob && echo "=== OCESQL OK ===" || \
-    (echo "=== OCESQL FAILED ===" && exit 1)
-RUN echo "=== GENERATED test.cob ===" && cat test.cob
+RUN ocesql test.cbl test.cob
 
-# Step 2: compile with full error output
+# Dump generated .cob so we can see it
+RUN cat test.cob
+
 ENV LD_LIBRARY_PATH="/usr/local/lib"
-RUN cobc -x -free -v test.cob -o test_bin \
-         -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3
+
+# Capture ALL output (stdout+stderr) then print before failing
+RUN cobc -x -free test.cob -o test_bin \
+         -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3 \
+         > /tmp/cobc.log 2>&1 \
+    || (cat /tmp/cobc.log && exit 1)
 
 CMD ["./test_bin"]
