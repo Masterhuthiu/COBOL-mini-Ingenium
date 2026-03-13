@@ -9,7 +9,7 @@ RUN apt-get update && \
     libcob4-dev \
     libsqlite3-dev \
     libpq-dev \        # chỉ để vượt qua check configure
-    pkg-config \       # đây là gói, phải nằm trong apt-get install
+    pkg-config \       # đây là gói apt, không phải instruction
     build-essential \
     gcc \
     make \
