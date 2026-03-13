@@ -1,5 +1,20 @@
-1 check policies due
-2 calculate premium
-3 generate invoice
-4 update policy
-5 accounting entry
+IDENTIFICATION DIVISION.
+PROGRAM-ID. BILLINGBATCH.
+
+PROCEDURE DIVISION.
+    DISPLAY "--- START BATCH BILLING PROCESS ---".
+
+    DISPLAY "STEP 1: CHECKING POLICIES DUE...".
+    * Logic check policies sẽ nằm ở đây
+
+    DISPLAY "STEP 2: CALCULATING PREMIUMS...".
+    * Gọi Rating Engine để tính toán
+
+    DISPLAY "STEP 3: GENERATING INVOICES...".
+
+    DISPLAY "STEP 4: UPDATING POLICIES STATUS...".
+
+    DISPLAY "STEP 5: CREATING ACCOUNTING ENTRIES...".
+
+    DISPLAY "--- BATCH BILLING FINISHED SUCCESSFULLY ---".
+    STOP RUN.
