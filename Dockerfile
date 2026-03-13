@@ -26,7 +26,7 @@ RUN apt-get update && \
 WORKDIR /opt
 RUN git clone https://github.com/opensourcecobol/Open-COBOL-ESQL.git && \
     cd Open-COBOL-ESQL && \
-    autoreconf -i && \                # tái tạo configure script
+    autoreconf -i && \                
     ./configure --with-sqlite3 --without-postgresql && \
     make && \
     make install && \
