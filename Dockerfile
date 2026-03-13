@@ -2,7 +2,7 @@ FROM ubuntu:20.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 1. Cài đặt công cụ build và thư viện phụ thuộc
+# 1. Cài đặt đầy đủ công cụ build và dependencies
 RUN apt-get update && apt-get install -y \
     gnucobol \
     libcob4-dev \
@@ -16,6 +16,8 @@ RUN apt-get update && apt-get install -y \
     autoconf \
     automake \
     libtool \
+    flex \
+    bison \
     python3 \
     python3-pip \
     cron \
