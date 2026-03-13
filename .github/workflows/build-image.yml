@@ -208,6 +208,17 @@ jobs:
           ls -la /usr/local/lib/libocesql*
           ldconfig -p | grep ocesql
 
+      - name: Debug GnuCOBOL module path
+        run: |
+          echo "--- GnuCOBOL version ---"
+          cobc --version
+          echo "--- cobcrun info ---"
+          cobcrun --info || true
+          echo "--- Các file .so trong /usr/local/lib ---"
+          ls /usr/local/lib/*.so
+          echo "--- libcob path ---"
+          ls /usr/lib/x86_64-linux-gnu/libcob* || true
+
       - name: Pre-compile COBOL ESQL samples
         run: |
           export COBCPY=/usr/local/share/open-cobol-esql/copy
@@ -220,6 +231,9 @@ jobs:
         run: |
           export COBCPY=/usr/local/share/open-cobol-esql/copy
           cd /tmp/ocesql/sample
+          # Compile libocesql thành COBOL module
+          cobc -m /usr/local/lib/libocesql.so -o /usr/local/lib/ocesql.so
+          # Compile COBOL programs
           cobc -x INSERTTBL.cob /usr/local/lib/libocesql.so -o INSERTTBL
           cobc -x FETCHTBL.cob  /usr/local/lib/libocesql.so -o FETCHTBL
           echo "✅ Compile thành công"
@@ -234,6 +248,7 @@ jobs:
           PGDATABASE: testdb
         run: |
           export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+          export COB_LIBRARY_PATH=/usr/local/lib
           cd /tmp/ocesql/sample
           echo "========================================"
           echo "  CHẠY INSERTTBL - Tạo bảng + Insert"
@@ -250,6 +265,7 @@ jobs:
           PGDATABASE: testdb
         run: |
           export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+          export COB_LIBRARY_PATH=/usr/local/lib
           cd /tmp/ocesql/sample
           echo "========================================"
           echo "  CHẠY FETCHTBL - Đọc data từ DB"
