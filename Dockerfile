@@ -2,76 +2,53 @@ FROM ubuntu:20.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 1. Cài đặt đầy đủ công cụ build và dependencies
-# Bổ sung dos2unix để fix lỗi định dạng file (nguyên nhân chính gây crash 255)
+# 1. Cài đặt công cụ
 RUN apt-get update && apt-get install -y \
-    gnucobol \
-    libcob4-dev \
-    libsqlite3-dev \
-    libpq-dev \        
-    pkg-config \
-    build-essential \
-    gcc \
-    make \
-    git \
-    autoconf \
-    automake \
-    libtool \
-    flex \
-    bison \
-    dos2unix \
-    python3 \
-    python3-pip \
-    cron \
+    gnucobol libcob4-dev libsqlite3-dev libpq-dev \        
+    pkg-config build-essential gcc make git autoconf automake libtool \
+    flex bison dos2unix python3 python3-pip cron \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Cài đặt Open-COBOL-ESQL từ mã nguồn
+# 2. Cài đặt Open-COBOL-ESQL
 WORKDIR /opt
 RUN git clone https://github.com/opensourcecobol/Open-COBOL-ESQL.git && \
     cd Open-COBOL-ESQL && \
-    chmod +x autogen.sh && \
-    ./autogen.sh && \
+    chmod +x autogen.sh && ./autogen.sh && \
     ./configure --with-sqlite3 --without-postgresql && \
-    make -j$(nproc) && \
-    make install && \
-    ldconfig
+    make -j$(nproc) && make install && ldconfig
 
 # 3. Thiết lập ứng dụng
 WORKDIR /app
 COPY . .
 RUN mkdir -p db bin
 
-# 4. Chuẩn hóa và Biên dịch COBOL
-# - Dùng dos2unix để đảm bảo file .cbl có định dạng xuống dòng chuẩn Linux
-# - Thêm đường dẫn thư viện /usr/local/include và /usr/local/lib
-RUN dos2unix batch/*.cbl src/*.cbl && \
+# 4. Biên dịch COBOL (Sửa lỗi 255 bằng cách kiểm tra file)
+# Sử dụng 'find' để tránh lỗi nếu thư mục trống và đảm bảo ocesql chạy đúng
+RUN find . -name "*.cbl" -exec dos2unix {} + && \
     # Biên dịch batch/billing_batch
     ocesql --free batch/billing_batch.cbl batch/billing_batch.cob && \
     cobc -x -free batch/billing_batch.cob -o bin/billing_batch \
          -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3 && \
-    # Biên dịch rating_engine
+    # Biên dịch các module engine (Sử dụng cấu trúc an toàn)
     ocesql --free src/rating_engine.cbl src/rating_engine.cob && \
     cobc -m -free src/rating_engine.cob -o bin/rating_engine.so \
          -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3 && \
-    # Biên dịch policy_engine
     ocesql --free src/policy_engine.cbl src/policy_engine.cob && \
     cobc -m -free src/policy_engine.cob -o bin/policy_engine.so \
          -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3 && \
-    # Biên dịch claim_engine
     ocesql --free src/claim_engine.cbl src/claim_engine.cob && \
     cobc -m -free src/claim_engine.cob -o bin/claim_engine.so \
          -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3
 
-# 5. Cấu hình Cron job
+# 5. Cron job
 RUN echo "0 0 * * * root /app/bin/billing_batch >> /var/log/cron.log 2>&1" > /etc/cron.d/billing-cron && \
     chmod 0644 /etc/cron.d/billing-cron && \
     crontab /etc/cron.d/billing-cron
 
-# 6. Thiết lập môi trường runtime
-# LD_LIBRARY_PATH giúp ứng dụng tìm thấy libocesql.so khi chạy
-ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-ENV COB_LIBRARY_PATH=/app/bin
+# 6. Môi trường runtime (Sửa lỗi cảnh báo UndefinedVar)
+ENV LD_LIBRARY_PATH="/usr/local/lib"
+ENV COB_LIBRARY_PATH="/app/bin"
 EXPOSE 5000
 
-# 7. Chạy cron song song với ứng dụng chính
+# 7. Chạy ứng dụng
 CMD ["bash", "-c", "service cron start && exec python3 api/app.py"]
