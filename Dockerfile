@@ -25,10 +25,11 @@ COPY test.cbl .
 # Bước sửa lỗi Exit 1:
 # 1. Chuyển định dạng file về Unix
 # 2. Chạy ocesql với cờ -I để nạp thư viện hệ thống
-# 3. Biên dịch với cobc
+# Sửa lỗi 255 bằng cách dọn dẹp file và ép kiểu biên dịch
 RUN dos2unix test.cbl && \
-    ocesql -I/usr/local/include test.cbl test.cob && \
+    sed -i 's/\r//' test.cbl && \
+    ocesql test.cbl test.cob && \
     cobc -x -free test.cob -o test_app -L/usr/local/lib -locesql -lsqlite3
-
+    
 ENV LD_LIBRARY_PATH="/usr/local/lib"
 CMD ["./test_app"]
