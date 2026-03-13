@@ -12,15 +12,10 @@ IDENTIFICATION DIVISION.
 
        PROCEDURE DIVISION.
            DISPLAY "RATING ENGINE: CALCULATING PREMIUM".
-
            EXEC SQL 
                SELECT base_premium INTO :BASE-PREMIUM
                FROM policy WHERE policy_id = :DB-POLICY-ID
            END-EXEC.
-
            COMPUTE FINAL-PREMIUM = BASE-PREMIUM * FACTOR.
-           
-           DISPLAY "POLICY ID: " DB-POLICY-ID.
-           DISPLAY "FINAL PREMIUM CALCULATED: " FINAL-PREMIUM.
-
+           DISPLAY "FINAL PREMIUM: " FINAL-PREMIUM.
            GOBACK.

@@ -5,22 +5,12 @@ IDENTIFICATION DIVISION.
        WORKING-STORAGE SECTION.
        EXEC SQL BEGIN DECLARE SECTION END-EXEC.
        01 DB-POLICY-ID     PIC 9(6).
-       01 DB-STATUS        PIC X(10).
        EXEC SQL END DECLARE SECTION END-EXEC.
 
        PROCEDURE DIVISION.
            DISPLAY "POLICY ENGINE: UPDATING STATUS".
-
            EXEC SQL
-               UPDATE policy 
-               SET status = 'ACTIVE' 
+               UPDATE policy SET status = 'ACTIVE' 
                WHERE policy_id = :DB-POLICY-ID
            END-EXEC.
-
-           IF SQLCODE = 0
-               DISPLAY "POLICY " DB-POLICY-ID " UPDATED SUCCESSFULLY"
-           ELSE
-               DISPLAY "ERROR UPDATING POLICY: " SQLCODE
-           END-IF.
-
            GOBACK.
