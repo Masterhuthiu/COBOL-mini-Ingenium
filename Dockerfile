@@ -2,12 +2,12 @@ FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 1. Cài đặt các công cụ biên dịch và thư viện phát triển (headers)
-# Bổ sung libcob-dev và libsqlite3-dev để biên dịch esql thành công
+# 1. Cài đặt các công cụ biên dịch và thư viện phát triển
+# Sửa libcob-dev thành libcob4-dev cho Ubuntu 22.04
 RUN apt-get update && \
     apt-get install -y \
     gnucobol \
-    libcob-dev \
+    libcob4-dev \
     libsqlite3-dev \
     build-essential \
     gcc \
@@ -22,7 +22,6 @@ RUN apt-get update && \
 WORKDIR /opt
 RUN curl -L https://github.com/mhardisty/GnuCOBOL-SQL/archive/refs/heads/master.tar.gz | tar xz && \
     cd GnuCOBOL-SQL-master && \
-    # Biên dịch trình tiền xử lý
     make && \
     make install
 
@@ -30,15 +29,15 @@ RUN curl -L https://github.com/mhardisty/GnuCOBOL-SQL/archive/refs/heads/master.
 WORKDIR /app
 COPY . .
 
-# 4. Tạo cấu trúc thư mục cần thiết
+# 4. Tạo cấu trúc thư mục
 RUN mkdir -p db bin
 
 # 5. BIÊN DỊCH HỆ THỐNG (Pre-process -> Compile)
-# Chuyển đổi SQL thành COBOL thuần và biên dịch thành file thực thi (-x)
+# Biên dịch Batch Job (Cron Job)
 RUN esql batch/billing_batch.cbl -o batch/billing_batch_sqled.cbl && \
     cobc -x -free batch/billing_batch_sqled.cbl -o bin/billing_batch -lsqlite3
 
-# Biên dịch các module máy chủ (.so)
+# Biên dịch các module Engine (.so)
 RUN esql src/rating_engine.cbl -o src/rating_engine_sqled.cbl && \
     cobc -m -free src/rating_engine_sqled.cbl -o bin/rating_engine.so -lsqlite3
 
