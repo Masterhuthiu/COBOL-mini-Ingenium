@@ -8,8 +8,8 @@ RUN apt-get update && \
     gnucobol \
     libcob4-dev \
     libsqlite3-dev \
-    libpq-dev \        # chỉ để vượt qua check configure
-    pkg-config \       # đây là gói apt, không phải instruction
+    libpq-dev \        
+    pkg-config \       
     build-essential \
     gcc \
     make \
