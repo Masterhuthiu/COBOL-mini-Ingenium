@@ -8,7 +8,6 @@ RUN apt-get update && \
     gnucobol \
     libcob4-dev \
     libsqlite3-dev \
-    libpq-dev \
     build-essential \
     gcc \
     make \
@@ -16,15 +15,16 @@ RUN apt-get update && \
     autoconf \
     automake \
     libtool \
+    pkg-config \
     python3 \
     python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Cài đặt Open-COBOL-ESQL (ocesql)
+# 2. Cài đặt Open-COBOL-ESQL (SQLite-only)
 WORKDIR /opt
 RUN git clone https://github.com/opensourcecobol/Open-COBOL-ESQL.git && \
     cd Open-COBOL-ESQL && \
-    ./configure --with-sqlite3 && \
+    ./configure --with-sqlite3 --without-postgresql && \
     make && \
     make install && \
     ldconfig
@@ -36,7 +36,7 @@ COPY . .
 # 4. Tạo cấu trúc thư mục
 RUN mkdir -p db bin
 
-# 5. BIÊN DỊCH HỆ THỐNG (Sử dụng lệnh ocesql)
+# 5. Biên dịch hệ thống COBOL với ocesql
 RUN ocesql batch/billing_batch.cbl batch/billing_batch.cob && \
     cobc -x -free batch/billing_batch.cob -o bin/billing_batch -locesql -lsqlite3
 
@@ -49,6 +49,7 @@ RUN ocesql src/policy_engine.cbl src/policy_engine.cob && \
 RUN ocesql src/claim_engine.cbl src/claim_engine.cob && \
     cobc -m -free src/claim_engine.cob -o bin/claim_engine.so -locesql -lsqlite3
 
+# 6. Thiết lập môi trường runtime
 ENV COB_LIBRARY_PATH=/app/bin
 EXPOSE 5000
 
