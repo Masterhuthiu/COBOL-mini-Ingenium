@@ -3,6 +3,7 @@ FROM ubuntu:20.04
 ENV DEBIAN_FRONTEND=noninteractive
 
 # 1. Cài đặt đầy đủ công cụ build và dependencies
+# Bổ sung dos2unix để fix lỗi định dạng file (nguyên nhân chính gây crash 255)
 RUN apt-get update && apt-get install -y \
     gnucobol \
     libcob4-dev \
@@ -18,12 +19,13 @@ RUN apt-get update && apt-get install -y \
     libtool \
     flex \
     bison \
+    dos2unix \
     python3 \
     python3-pip \
     cron \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Cài đặt Open-COBOL-ESQL
+# 2. Cài đặt Open-COBOL-ESQL từ mã nguồn
 WORKDIR /opt
 RUN git clone https://github.com/opensourcecobol/Open-COBOL-ESQL.git && \
     cd Open-COBOL-ESQL && \
@@ -39,26 +41,35 @@ WORKDIR /app
 COPY . .
 RUN mkdir -p db bin
 
-# 4. Biên dịch COBOL với ocesql
-# Thêm cờ -free cho ocesql và kiểm tra kỹ đường dẫn thư viện
-RUN ocesql --free batch/billing_batch.cbl batch/billing_batch.cob && \
-    cobc -x -free batch/billing_batch.cob -o bin/billing_batch -L/usr/local/lib -locesql -lsqlite3
+# 4. Chuẩn hóa và Biên dịch COBOL
+# - Dùng dos2unix để đảm bảo file .cbl có định dạng xuống dòng chuẩn Linux
+# - Thêm đường dẫn thư viện /usr/local/include và /usr/local/lib
+RUN dos2unix batch/*.cbl src/*.cbl && \
+    # Biên dịch batch/billing_batch
+    ocesql --free batch/billing_batch.cbl batch/billing_batch.cob && \
+    cobc -x -free batch/billing_batch.cob -o bin/billing_batch \
+         -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3 && \
+    # Biên dịch rating_engine
+    ocesql --free src/rating_engine.cbl src/rating_engine.cob && \
+    cobc -m -free src/rating_engine.cob -o bin/rating_engine.so \
+         -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3 && \
+    # Biên dịch policy_engine
+    ocesql --free src/policy_engine.cbl src/policy_engine.cob && \
+    cobc -m -free src/policy_engine.cob -o bin/policy_engine.so \
+         -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3 && \
+    # Biên dịch claim_engine
+    ocesql --free src/claim_engine.cbl src/claim_engine.cob && \
+    cobc -m -free src/claim_engine.cob -o bin/claim_engine.so \
+         -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3
 
-RUN ocesql --free src/rating_engine.cbl src/rating_engine.cob && \
-    cobc -m -free src/rating_engine.cob -o bin/rating_engine.so -L/usr/local/lib -locesql -lsqlite3
-
-RUN ocesql --free src/policy_engine.cbl src/policy_engine.cob && \
-    cobc -m -free src/policy_engine.cob -o bin/policy_engine.so -L/usr/local/lib -locesql -lsqlite3
-
-RUN ocesql --free src/claim_engine.cbl src/claim_engine.cob && \
-    cobc -m -free src/claim_engine.cob -o bin/claim_engine.so -L/usr/local/lib -locesql -lsqlite3
-
-# 5. Cron job
+# 5. Cấu hình Cron job
 RUN echo "0 0 * * * root /app/bin/billing_batch >> /var/log/cron.log 2>&1" > /etc/cron.d/billing-cron && \
     chmod 0644 /etc/cron.d/billing-cron && \
     crontab /etc/cron.d/billing-cron
 
 # 6. Thiết lập môi trường runtime
+# LD_LIBRARY_PATH giúp ứng dụng tìm thấy libocesql.so khi chạy
+ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 ENV COB_LIBRARY_PATH=/app/bin
 EXPOSE 5000
 
