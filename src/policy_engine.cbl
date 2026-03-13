@@ -1,61 +1,18 @@
-       IDENTIFICATION DIVISION.
-       PROGRAM-ID. POLICYENGINE.
+IDENTIFICATION DIVISION.
+PROGRAM-ID. POLICYENGINE.
 
-       ENVIRONMENT DIVISION.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 POLICY-ID PIC 9(6) VALUE 100001.
+01 CUSTOMER-NAME PIC X(30) VALUE "JOHN DOE".
+01 STATUS PIC X(10) VALUE "ACTIVE".
 
-       DATA DIVISION.
-       WORKING-STORAGE SECTION.
+PROCEDURE DIVISION.
+    DISPLAY "POLICY ENGINE START".
 
-       COPY "../copybooks/policy_record.cpy".
-       COPY "../copybooks/rider_record.cpy".
+    DISPLAY "POLICY ID: " POLICY-ID.
+    DISPLAY "CUSTOMER: " CUSTOMER-NAME.
+    DISPLAY "STATUS: " STATUS.
 
-       01 TOTAL-PREMIUM      PIC 9(7)V99.
-
-       PROCEDURE DIVISION.
-
-       MAIN-PROCEDURE.
-
-           DISPLAY "=============================="
-           DISPLAY " MINI INGENIUM POLICY ENGINE "
-           DISPLAY "=============================="
-
-      * Input policy information
-
-           DISPLAY "ENTER POLICY ID:"
-           ACCEPT POLICY-ID
-
-           DISPLAY "ENTER CUSTOMER NAME:"
-           ACCEPT CUSTOMER-NAME
-
-           DISPLAY "ENTER PRODUCT CODE:"
-           ACCEPT PRODUCT-CODE
-
-           DISPLAY "ENTER BASE PREMIUM:"
-           ACCEPT BASE-PREMIUM
-
-      * Rider information
-
-           DISPLAY "ENTER RIDER TYPE:"
-           ACCEPT RIDER-TYPE
-
-           DISPLAY "ENTER RIDER PREMIUM:"
-           ACCEPT RIDER-PREMIUM
-
-      * Call rating engine
-
-           CALL "RATINGENGINE"
-                USING BASE-PREMIUM
-                      RIDER-PREMIUM
-                      TOTAL-PREMIUM
-
-      * Display result
-
-           DISPLAY "------------------------------"
-           DISPLAY "POLICY CREATED"
-           DISPLAY "POLICY ID: " POLICY-ID
-           DISPLAY "CUSTOMER: " CUSTOMER-NAME
-           DISPLAY "PRODUCT: " PRODUCT-CODE
-           DISPLAY "TOTAL PREMIUM: " TOTAL-PREMIUM
-           DISPLAY "------------------------------"
-
-           STOP RUN.
+    DISPLAY "BUILD SUCCESSFUL".
+    GOBACK.
