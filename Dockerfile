@@ -8,8 +8,8 @@ RUN apt-get update && \
     gnucobol \
     libcob4-dev \
     libsqlite3-dev \
-    libpq-dev \        # cần để vượt qua check configure
-    pkg-config \
+    libpq-dev \        # chỉ để vượt qua check configure
+    pkg-config \       # đây là gói, phải nằm trong danh sách apt-get install
     build-essential \
     gcc \
     make \
@@ -21,6 +21,7 @@ RUN apt-get update && \
     python3-pip \
     cron \
     && rm -rf /var/lib/apt/lists/*
+
 
 # 2. Cài đặt Open-COBOL-ESQL (SQLite-only)
 WORKDIR /opt
