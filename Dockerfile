@@ -25,7 +25,6 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /opt
 RUN git clone https://github.com/opensourcecobol/Open-COBOL-ESQL.git && \
     cd Open-COBOL-ESQL && \
-    git checkout 1.1 && \
     chmod +x autogen.sh && \
     ./autogen.sh && \
     ./configure --with-sqlite3 --without-postgresql && \
