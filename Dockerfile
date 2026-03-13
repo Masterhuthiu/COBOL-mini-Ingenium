@@ -1,6 +1,7 @@
 FROM ubuntu:20.04
 ENV DEBIAN_FRONTEND=noninteractive
 
+# 1. Cai dat dependencies
 RUN apt-get update && apt-get install -y \
     gnucobol libcob4-dev libsqlite3-dev libpq-dev \
     pkg-config build-essential gcc make git autoconf automake libtool \
@@ -8,29 +9,29 @@ RUN apt-get update && apt-get install -y \
     m4 gettext \
     && rm -rf /var/lib/apt/lists/*
 
+# 2. Cai dat Open-COBOL-ESQL (Phan ban da xac nhan chay tot)
 WORKDIR /opt
 RUN git clone --depth 1 https://github.com/opensourcecobol/Open-COBOL-ESQL.git
-
 WORKDIR /opt/Open-COBOL-ESQL
-RUN autoreconf -fiv
-RUN ./configure --with-sqlite3 --without-postgresql
-RUN make -j$(nproc)
-RUN make install && ldconfig
+RUN autoreconf -fiv && \
+    ./configure --with-sqlite3 --without-postgresql && \
+    make -j$(nproc) && \
+    make install && ldconfig
 
+# 3. Build file test
 WORKDIR /app
 COPY test.cbl .
 
-RUN ocesql test.cbl test.cob
+# Chuan hoa file (fix xuong dong Windows va dam bao thut le 7 dau cach)
+RUN dos2unix test.cbl && \
+    sed -i 's/^[[:space:]]*//' test.cbl && \
+    sed -i 's/^/       /' test.cbl
 
-# Dump generated .cob so we can see it
-RUN cat test.cob
+# Pre-compile SQL sang COBOL và Bien dich sang file thuc thi
+RUN ocesql test.cbl test.cob && \
+    cobc -x -free test.cob -o test_app -L/usr/local/lib -locesql -lsqlite3
 
+# 4. Thiet lap moi truong runtime va chay
 ENV LD_LIBRARY_PATH="/usr/local/lib"
 
-# Capture ALL output (stdout+stderr) then print before failing
-RUN cobc -x -free test.cob -o test_bin \
-         -I/usr/local/include -L/usr/local/lib -locesql -lsqlite3 \
-         > /tmp/cobc.log 2>&1 \
-    || (cat /tmp/cobc.log && exit 1)
-
-CMD ["./test_bin"]
+CMD ["./test_app"]
