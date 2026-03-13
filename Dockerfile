@@ -8,11 +8,14 @@ RUN apt-get update && \
     gnucobol \
     libcob4-dev \
     libsqlite3-dev \
+    libpq-dev \
     build-essential \
     gcc \
     make \
-    cmake \
     git \
+    autoconf \
+    automake \
+    libtool \
     python3 \
     python3-pip \
     && rm -rf /var/lib/apt/lists/*
@@ -21,8 +24,7 @@ RUN apt-get update && \
 WORKDIR /opt
 RUN git clone https://github.com/opensourcecobol/Open-COBOL-ESQL.git && \
     cd Open-COBOL-ESQL && \
-    mkdir build && cd build && \
-    cmake .. -DBUILD_SQLITE3=ON && \
+    ./configure --with-sqlite3 && \
     make && \
     make install && \
     ldconfig
@@ -35,8 +37,6 @@ COPY . .
 RUN mkdir -p db bin
 
 # 5. BIÊN DỊCH HỆ THỐNG (Sử dụng lệnh ocesql)
-# Bước 1: Tiền xử lý .cbl thành .cob
-# Bước 2: Biên dịch .cob thành file thực thi/thư viện
 RUN ocesql batch/billing_batch.cbl batch/billing_batch.cob && \
     cobc -x -free batch/billing_batch.cob -o bin/billing_batch -locesql -lsqlite3
 
