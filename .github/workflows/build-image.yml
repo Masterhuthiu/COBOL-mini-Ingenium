@@ -95,7 +95,9 @@ jobs:
           ./configure
           make
           sudo make install
+          echo "/usr/local/lib" | sudo tee /etc/ld.so.conf.d/ocesql.conf
           sudo ldconfig
+          ldconfig -p | grep ocesql
 
       - name: Pre-compile COBOL ESQL samples
         run: |
@@ -109,9 +111,10 @@ jobs:
         run: |
           export COBCPY=/usr/local/share/open-cobol-esql/copy
           cd /tmp/ocesql/sample
-          cobc -x -locesql INSERTTBL.cob -o INSERTTBL
-          cobc -x -locesql FETCHTBL.cob -o FETCHTBL
+          cobc -x INSERTTBL.cob -L/usr/local/lib -locesql -Wl,-rpath,/usr/local/lib -o INSERTTBL
+          cobc -x FETCHTBL.cob  -L/usr/local/lib -locesql -Wl,-rpath,/usr/local/lib -o FETCHTBL
           echo "✅ Compile thành công"
+          ls -la INSERTTBL FETCHTBL
 
       - name: Run INSERTTBL
         env:
@@ -120,6 +123,7 @@ jobs:
           PGUSER: postgres
           PGPASSWORD: postgres
           PGDATABASE: testdb
+          LD_LIBRARY_PATH: /usr/local/lib
         run: |
           cd /tmp/ocesql/sample
           ./INSERTTBL
@@ -132,6 +136,7 @@ jobs:
           PGUSER: postgres
           PGPASSWORD: postgres
           PGDATABASE: testdb
+          LD_LIBRARY_PATH: /usr/local/lib
         run: |
           cd /tmp/ocesql/sample
           ./FETCHTBL
