@@ -25,19 +25,19 @@ RUN mkdir -p db bin && find . -name "*.cbl" -exec dos2unix {} +
 # 4. Biên dịch từng file (Tách riêng để cô lập lỗi)
 # Bước 4.1: Biên dịch Batch
 RUN ocesql batch/billing_batch.cbl batch/billing_batch.cob && \
-    cobc -x -free batch/billing_batch.cob -o bin/billing_batch -L/usr/local/lib -locesql -lsqlite3
+    cobc -x batch/billing_batch.cob -o bin/billing_batch -L/usr/local/lib -locesql -lsqlite3
 
 # Bước 4.2: Biên dịch Rating Engine
 RUN ocesql src/rating_engine.cbl src/rating_engine.cob && \
-    cobc -m -free src/rating_engine.cob -o bin/rating_engine.so -L/usr/local/lib -locesql -lsqlite3
+    cobc -m src/rating_engine.cob -o bin/rating_engine.so -L/usr/local/lib -locesql -lsqlite3
 
 # Bước 4.3: Biên dịch Policy Engine
 RUN ocesql src/policy_engine.cbl src/policy_engine.cob && \
-    cobc -m -free src/policy_engine.cob -o bin/policy_engine.so -L/usr/local/lib -locesql -lsqlite3
+    cobc -m src/policy_engine.cob -o bin/policy_engine.so -L/usr/local/lib -locesql -lsqlite3
 
 # Bước 4.4: Biên dịch Claim Engine
 RUN ocesql src/claim_engine.cbl src/claim_engine.cob && \
-    cobc -m -free src/claim_engine.cob -o bin/claim_engine.so -L/usr/local/lib -locesql -lsqlite3
+    cobc -m src/claim_engine.cob -o bin/claim_engine.so -L/usr/local/lib -locesql -lsqlite3
 
 # 5. Cấu hình Cron và Môi trường
 RUN echo "0 0 * * * root /app/bin/billing_batch >> /var/log/cron.log 2>&1" > /etc/cron.d/billing-cron && \
