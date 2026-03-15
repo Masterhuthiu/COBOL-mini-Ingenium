@@ -272,4 +272,4 @@ jobs:
           echo "--- Số dòng ---"
           PGPASSWORD=postgres psql -h localhost -U postgres -d testdb \
             -c "SELECT COUNT(*) as tong_so_dong FROM emp;"
-          echo "========================================"
+          echo "==========================="
